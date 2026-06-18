@@ -1,8 +1,8 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { cp } from "node:fs/promises";
+import { cp, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { boolInput, configureNpmAuth, cwdFromInput, input, isMissingVersion, npmView, output, packageContext, run, summary } from "./lib.mjs";
+import { dirname, join } from "node:path";
+import { assertSafeRepoPath, boolInput, configureNpmAuth, cwdFromInput, input, isMissingVersion, npmView, output, packageContext, run, summary } from "./lib.mjs";
 
 const cwd = cwdFromInput();
 const mode = input("mode", "npm");
@@ -65,7 +65,7 @@ if (mode === "npm") {
     delete staged.scripts;
     delete staged.devDependencies;
     writeFileSync(join(stagingDir, "package.json"), `${JSON.stringify(staged, null, 2)}\n`, "utf8");
-    await cp(join(packageDir, "dist"), join(stagingDir, "dist"), { recursive: true });
+    await stagePackedFiles(packageDir, stagingDir);
     const view = npmView(mirrorSpec, registry, stagingDir);
     if (view.status === 0 && view.stdout.trim() === version) {
       console.log(`${mirrorSpec} already exists on GitHub Packages; skipping publish.`);
@@ -107,6 +107,32 @@ output("package-spec", spec);
 output("dist-tag", distTag);
 summary(`### async/actions/publish\n\n- mode: ${mode}\n- package: ${spec}\n- registry: ${registry}\n- dist-tag: ${distTag}`);
 npmAuth?.cleanup();
+
+async function stagePackedFiles(packageDir, stagingDir) {
+  for (const file of readPackFiles(packageDir)) {
+    if (file === "package.json") continue;
+    assertSafeRepoPath(file, { allowWorkflowPaths: true });
+    const source = join(packageDir, file);
+    const target = join(stagingDir, file);
+    await mkdir(dirname(target), { recursive: true });
+    await cp(source, target, { recursive: true });
+  }
+}
+
+function readPackFiles(packageDir) {
+  const result = run("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], { cwd: packageDir, capture: true });
+  const packs = JSON.parse(result.stdout);
+  const files = packs?.[0]?.files;
+  if (!Array.isArray(files) || files.length === 0) {
+    throw new Error("npm pack --dry-run returned no files for GitHub Packages staging.");
+  }
+  return files.map((entry) => {
+    if (!entry || typeof entry.path !== "string") {
+      throw new Error("npm pack --dry-run returned an invalid file entry.");
+    }
+    return entry.path;
+  });
+}
 
 function positiveIntegerInput(name, fallback) {
   const value = Number(input(name, String(fallback)));
