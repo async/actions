@@ -50,20 +50,13 @@ outputs:
   runtimes:
     description: Runtime specs requested by the caller.
     value: ${{ steps.setup.outputs.runtimes }}
+  dependency-cache-store:
+    description: Package manager dependency cache path.
+    value: ${{ steps.setup.outputs.dependency-cache-store }}
 runs:
   using: composite
   steps:
-    - name: Set up Node with cache
-      if: ${{ inputs.cache == 'true' }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ inputs.node-version }}
-        cache: ${{ inputs.package-manager }}
-        cache-dependency-path: ${{ inputs.dependency-cache-path }}
-        registry-url: ${{ inputs.registry-url }}
-        scope: ${{ inputs.scope }}
     - name: Set up Node
-      if: ${{ inputs.cache != 'true' }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
@@ -74,11 +67,36 @@ runs:
       uses: denoland/setup-deno@v2
       with:
         deno-version: v2.x
-    - name: Set up runtimes and dependencies
+    - name: Prepare package managers
       id: setup
       shell: bash
       run: node "${{ github.action_path }}/../scripts/setup.mjs"
       env:
+        INPUT_PREPARE: "true"
+        INPUT_NODE_VERSION: ${{ inputs.node-version }}
+        INPUT_PNPM_VERSION: ${{ inputs.pnpm-version }}
+        INPUT_NPM_VERSION: ${{ inputs.npm-version }}
+        INPUT_RUNTIME: ${{ inputs.runtime }}
+        INPUT_PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        INPUT_INSTALL: "false"
+        INPUT_FROZEN_LOCKFILE: ${{ inputs.frozen-lockfile }}
+        INPUT_CACHE: ${{ inputs.cache }}
+        INPUT_DEPENDENCY_CACHE_PATH: ${{ inputs.dependency-cache-path }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+    - name: Restore pnpm dependency cache
+      if: ${{ inputs.cache == 'true' && inputs.package-manager == 'pnpm' && inputs.dependency-cache-path != '' }}
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.setup.outputs.dependency-cache-store }}
+        key: ${{ runner.os }}-pnpm-${{ hashFiles(inputs.dependency-cache-path) }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+    - name: Install dependencies
+      if: ${{ inputs.install == 'true' }}
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/setup.mjs"
+      env:
+        INPUT_PREPARE: "false"
         INPUT_NODE_VERSION: ${{ inputs.node-version }}
         INPUT_PNPM_VERSION: ${{ inputs.pnpm-version }}
         INPUT_NPM_VERSION: ${{ inputs.npm-version }}
@@ -86,4 +104,6 @@ runs:
         INPUT_PACKAGE_MANAGER: ${{ inputs.package-manager }}
         INPUT_INSTALL: ${{ inputs.install }}
         INPUT_FROZEN_LOCKFILE: ${{ inputs.frozen-lockfile }}
+        INPUT_CACHE: ${{ inputs.cache }}
+        INPUT_DEPENDENCY_CACHE_PATH: ${{ inputs.dependency-cache-path }}
         INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
