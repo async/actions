@@ -12,6 +12,8 @@ const distTag = input("dist-tag", "latest");
 const access = input("access", "public");
 const provenance = boolInput("provenance", true);
 const verifyPublic = boolInput("verify-public", true);
+const verifyAttempts = positiveIntegerInput("verify-attempts", 6);
+const verifyDelayMs = positiveIntegerInput("verify-delay-ms", 5000);
 const ownerScope = input("owner-scope", process.env.GITHUB_REPOSITORY_OWNER ?? "");
 const tokenEnvName = input("token-env-name", registry.includes("npm.pkg.github.com") ? "GITHUB_TOKEN" : "NODE_AUTH_TOKEN");
 const { packageDir, manifest } = packageContext(packagePath);
@@ -19,11 +21,21 @@ const version = input("version", manifest.version);
 const spec = `${manifest.name}@${version}`;
 const npmAuth = configureNpmAuth(registry, tokenEnvName);
 
-function ensureVersionExists(targetSpec, targetRegistry) {
-  const view = npmView(targetSpec, targetRegistry, cwd);
-  if (view.status !== 0) {
-    throw new Error(`Could not verify ${targetSpec} on ${targetRegistry}: ${(view.stderr ?? view.stdout ?? "").slice(0, 500)}`);
+async function ensureVersionExists(targetSpec, targetRegistry) {
+  let lastView;
+  for (let attempt = 1; attempt <= verifyAttempts; attempt += 1) {
+    const view = npmView(targetSpec, targetRegistry, cwd);
+    if (view.status === 0) {
+      if (attempt > 1) console.log(`Verified ${targetSpec} on ${targetRegistry} after ${attempt} attempts.`);
+      return;
+    }
+    lastView = view;
+    if (attempt < verifyAttempts) {
+      console.log(`Waiting for ${targetSpec} on ${targetRegistry} (${attempt}/${verifyAttempts}).`);
+      await delay(verifyDelayMs);
+    }
   }
+  throw new Error(`Could not verify ${targetSpec} on ${targetRegistry}: ${((lastView?.stderr ?? lastView?.stdout) ?? "").slice(0, 500)}`);
 }
 
 if (mode === "npm") {
@@ -36,7 +48,7 @@ if (mode === "npm") {
     if (provenance) args.push("--provenance");
     run("npm", args, { cwd });
   }
-  if (verifyPublic) ensureVersionExists(spec, "https://registry.npmjs.org");
+  if (verifyPublic) await ensureVersionExists(spec, "https://registry.npmjs.org");
 } else if (mode === "github-packages") {
   if (!ownerScope) throw new Error("owner-scope is required for GitHub Packages publishing.");
   const leaf = manifest.name.startsWith("@") ? manifest.name.split("/")[1] : manifest.name;
@@ -83,7 +95,7 @@ if (mode === "npm") {
     run("gh", args, { cwd });
   }
 } else if (mode === "doctor") {
-  ensureVersionExists(spec, "https://registry.npmjs.org");
+  await ensureVersionExists(spec, "https://registry.npmjs.org");
   const repo = input("repository", process.env.GITHUB_REPOSITORY ?? "");
   if (repo) run("gh", ["release", "view", `v${version}`, "--repo", repo], { cwd });
 } else {
@@ -95,3 +107,12 @@ output("package-spec", spec);
 output("dist-tag", distTag);
 summary(`### async/actions/publish\n\n- mode: ${mode}\n- package: ${spec}\n- registry: ${registry}\n- dist-tag: ${distTag}`);
 npmAuth?.cleanup();
+
+function positiveIntegerInput(name, fallback) {
+  const value = Number(input(name, String(fallback)));
+  return Number.isInteger(value) && value > 0 ? value : fallback;
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

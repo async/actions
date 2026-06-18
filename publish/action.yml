@@ -28,6 +28,12 @@ inputs:
   verify-public:
     description: Whether to verify unauthenticated npm registry state.
     default: "true"
+  verify-attempts:
+    description: Number of registry verification attempts after publishing.
+    default: "6"
+  verify-delay-ms:
+    description: Delay between registry verification attempts.
+    default: "5000"
   token-env-name:
     description: Name of the env var containing the registry token supplied by the caller.
     default: ""
@@ -61,5 +67,7 @@ runs:
         INPUT_PROVENANCE: ${{ inputs.provenance }}
         INPUT_OWNER_SCOPE: ${{ inputs.owner-scope }}
         INPUT_VERIFY_PUBLIC: ${{ inputs.verify-public }}
+        INPUT_VERIFY_ATTEMPTS: ${{ inputs.verify-attempts }}
+        INPUT_VERIFY_DELAY_MS: ${{ inputs.verify-delay-ms }}
         INPUT_TOKEN_ENV_NAME: ${{ inputs.token-env-name }}
         INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}

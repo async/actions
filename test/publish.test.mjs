@@ -23,6 +23,16 @@ test("GitHub Packages auth can prefer GITHUB_TOKEN over NODE_AUTH_TOKEN", () => 
   }
 });
 
+test("publish action exposes bounded registry verification retries", () => {
+  const action = readFileSync(new URL("../publish/action.yml", import.meta.url), "utf8");
+  const script = readFileSync(new URL("../scripts/publish.mjs", import.meta.url), "utf8");
+
+  assert.match(action, /verify-attempts:/u);
+  assert.match(action, /verify-delay-ms:/u);
+  assert.match(script, /Waiting for \$\{targetSpec\}/u);
+  assert.match(script, /await ensureVersionExists\(spec, "https:\/\/registry\.npmjs\.org"\)/u);
+});
+
 function restoreEnv(name, value) {
   if (value === undefined) {
     delete process.env[name];
