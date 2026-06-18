@@ -13,10 +13,11 @@ const access = input("access", "public");
 const provenance = boolInput("provenance", true);
 const verifyPublic = boolInput("verify-public", true);
 const ownerScope = input("owner-scope", process.env.GITHUB_REPOSITORY_OWNER ?? "");
+const tokenEnvName = input("token-env-name", registry.includes("npm.pkg.github.com") ? "GITHUB_TOKEN" : "NODE_AUTH_TOKEN");
 const { packageDir, manifest } = packageContext(packagePath);
 const version = input("version", manifest.version);
 const spec = `${manifest.name}@${version}`;
-const npmAuth = configureNpmAuth(registry);
+const npmAuth = configureNpmAuth(registry, tokenEnvName);
 
 function ensureVersionExists(targetSpec, targetRegistry) {
   const view = npmView(targetSpec, targetRegistry, cwd);
