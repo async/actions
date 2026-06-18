@@ -1,0 +1,89 @@
+name: async setup
+description: Set up Async GitHub Actions runtimes, package managers, registry auth, cache, and installs.
+inputs:
+  node-version:
+    description: Node.js version passed to actions/setup-node.
+    default: "24"
+  pnpm-version:
+    description: pnpm version activated through Corepack.
+    default: "11.1.0"
+  npm-version:
+    description: npm version installed globally, or false to skip.
+    default: "11.16.0"
+  runtime:
+    description: Newline or comma runtime specs such as node@24,deno@2,bun@1.
+    default: "node@24"
+  package-manager:
+    description: Package manager for cache and install.
+    default: pnpm
+  install:
+    description: Whether to install dependencies.
+    default: "false"
+  frozen-lockfile:
+    description: Whether installs use lockfile-frozen mode.
+    default: "true"
+  cache:
+    description: Whether to restore the package manager dependency cache.
+    default: "true"
+  dependency-cache-path:
+    description: Lockfile path passed to setup-node cache-dependency-path.
+    default: ""
+  registry-url:
+    description: Registry URL passed to setup-node for auth configuration.
+    default: ""
+  scope:
+    description: Registry scope passed to setup-node.
+    default: ""
+  working-directory:
+    description: Directory where install commands run.
+    default: "."
+outputs:
+  node-version:
+    description: Resolved Node.js version.
+    value: ${{ steps.setup.outputs.node-version }}
+  pnpm-version:
+    description: Resolved pnpm version.
+    value: ${{ steps.setup.outputs.pnpm-version }}
+  npm-version:
+    description: Resolved npm version.
+    value: ${{ steps.setup.outputs.npm-version }}
+  runtimes:
+    description: Runtime specs requested by the caller.
+    value: ${{ steps.setup.outputs.runtimes }}
+runs:
+  using: composite
+  steps:
+    - name: Set up Node with cache
+      if: ${{ inputs.cache == 'true' }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.package-manager }}
+        cache-dependency-path: ${{ inputs.dependency-cache-path }}
+        registry-url: ${{ inputs.registry-url }}
+        scope: ${{ inputs.scope }}
+    - name: Set up Node
+      if: ${{ inputs.cache != 'true' }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: ${{ inputs.registry-url }}
+        scope: ${{ inputs.scope }}
+    - name: Set up Deno
+      if: ${{ contains(inputs.runtime, 'deno') }}
+      uses: denoland/setup-deno@v2
+      with:
+        deno-version: v2.x
+    - name: Set up runtimes and dependencies
+      id: setup
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/setup.mjs"
+      env:
+        INPUT_NODE_VERSION: ${{ inputs.node-version }}
+        INPUT_PNPM_VERSION: ${{ inputs.pnpm-version }}
+        INPUT_NPM_VERSION: ${{ inputs.npm-version }}
+        INPUT_RUNTIME: ${{ inputs.runtime }}
+        INPUT_PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        INPUT_INSTALL: ${{ inputs.install }}
+        INPUT_FROZEN_LOCKFILE: ${{ inputs.frozen-lockfile }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}

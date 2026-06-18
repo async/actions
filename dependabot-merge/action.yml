@@ -1,0 +1,38 @@
+name: async dependabot merge
+description: Validate Dependabot metadata, approve, wait for checks, and squash-merge.
+inputs:
+  repository:
+    description: Repository in owner/name form.
+    default: ""
+  pull-request-number:
+    description: Pull request number.
+    required: true
+  actor:
+    description: Pull request actor.
+    default: ""
+  dependency-ecosystem:
+    description: Ecosystem from dependabot/fetch-metadata.
+    required: true
+  allowed-ecosystems:
+    description: Newline or comma list of ecosystems allowed to auto-merge.
+    default: npm,pnpm,github-actions
+  wait-seconds:
+    description: Maximum wait window for required checks.
+    default: "90"
+outputs:
+  merged:
+    description: Indicates the action reached merge scheduling.
+    value: "true"
+runs:
+  using: composite
+  steps:
+    - name: Merge validated Dependabot PR
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/dependabot-merge.mjs"
+      env:
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_PULL_REQUEST_NUMBER: ${{ inputs.pull-request-number }}
+        INPUT_ACTOR: ${{ inputs.actor }}
+        INPUT_DEPENDENCY_ECOSYSTEM: ${{ inputs.dependency-ecosystem }}
+        INPUT_ALLOWED_ECOSYSTEMS: ${{ inputs.allowed-ecosystems }}
+        INPUT_WAIT_SECONDS: ${{ inputs.wait-seconds }}

@@ -1,0 +1,61 @@
+name: async publish
+description: Publish npm/GitHub Packages, create GitHub Releases, and verify release state.
+inputs:
+  package-path:
+    description: Package directory containing package.json.
+    default: "."
+  registry:
+    description: Target package registry.
+    default: https://registry.npmjs.org
+  mode:
+    description: Publish mode, one of npm, github-packages, github-release, or doctor.
+    default: npm
+  dist-tag:
+    description: npm dist-tag to publish or move.
+    default: latest
+  version:
+    description: Version override; defaults to package.json version.
+    default: ""
+  access:
+    description: npm publish access.
+    default: public
+  provenance:
+    description: Whether npm publish should request provenance.
+    default: "true"
+  owner-scope:
+    description: Owner scope for GitHub Packages mirror names.
+    default: ""
+  verify-public:
+    description: Whether to verify unauthenticated npm registry state.
+    default: "true"
+  working-directory:
+    description: Directory containing package-path.
+    default: "."
+outputs:
+  package-spec:
+    description: Published package spec.
+    value: ${{ steps.publish.outputs.package-spec }}
+  published-version:
+    description: Published version.
+    value: ${{ steps.publish.outputs.published-version }}
+  dist-tag:
+    description: Published or moved dist-tag.
+    value: ${{ steps.publish.outputs.dist-tag }}
+runs:
+  using: composite
+  steps:
+    - name: Publish or verify package
+      id: publish
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/publish.mjs"
+      env:
+        INPUT_PACKAGE_PATH: ${{ inputs.package-path }}
+        INPUT_REGISTRY: ${{ inputs.registry }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_DIST_TAG: ${{ inputs.dist-tag }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_ACCESS: ${{ inputs.access }}
+        INPUT_PROVENANCE: ${{ inputs.provenance }}
+        INPUT_OWNER_SCOPE: ${{ inputs.owner-scope }}
+        INPUT_VERIFY_PUBLIC: ${{ inputs.verify-public }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}

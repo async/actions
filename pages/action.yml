@@ -1,0 +1,83 @@
+name: async pages
+description: Validate static or prerendered Pages output, upload the Pages artifact, and optionally deploy.
+inputs:
+  mode:
+    description: Pages mode, one of static, jekyll, or prerender.
+    default: static
+  path:
+    description: Static or prerender output path.
+    default: .async/pages
+  source:
+    description: Jekyll source directory.
+    default: "."
+  destination:
+    description: Jekyll destination directory.
+    default: ./_site
+  artifact-name:
+    description: Pages artifact name.
+    default: github-pages
+  deploy:
+    description: Whether to deploy the uploaded Pages artifact.
+    default: "false"
+  upload:
+    description: Whether to upload a Pages artifact before deploy.
+    default: "true"
+  environment-name:
+    description: Deployment environment name.
+    default: github-pages
+  validate-index:
+    description: Whether static/prerender output must contain index.html.
+    default: "true"
+  spa-fallback:
+    description: Whether to create 404.html from index.html when missing.
+    default: "false"
+  working-directory:
+    description: Directory containing the output paths.
+    default: "."
+outputs:
+  artifact-name:
+    description: Uploaded Pages artifact name.
+    value: ${{ steps.validate.outputs.artifact-name }}
+  path:
+    description: Resolved Pages artifact path.
+    value: ${{ steps.validate.outputs.path }}
+  page-url:
+    description: Deployed Pages URL when deploy is true.
+    value: ${{ steps.deploy.outputs.page_url }}
+runs:
+  using: composite
+  steps:
+    - name: Configure Pages
+      uses: actions/configure-pages@v5
+    - name: Build with Jekyll
+      if: ${{ inputs.mode == 'jekyll' }}
+      uses: actions/jekyll-build-pages@v1
+      with:
+        source: ${{ inputs.source }}
+        destination: ${{ inputs.destination }}
+    - name: Validate Pages output
+      id: validate
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/pages.mjs"
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_SOURCE: ${{ inputs.source }}
+        INPUT_DESTINATION: ${{ inputs.destination }}
+        INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        INPUT_VALIDATE_INDEX: ${{ inputs.validate-index }}
+        INPUT_SPA_FALLBACK: ${{ inputs.spa-fallback }}
+        INPUT_UPLOAD: ${{ inputs.upload }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+    - name: Upload Pages artifact
+      if: ${{ inputs.upload != 'false' }}
+      uses: actions/upload-pages-artifact@v3
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.validate.outputs.path }}
+    - name: Deploy Pages
+      if: ${{ inputs.deploy == 'true' }}
+      id: deploy
+      uses: actions/deploy-pages@v4
+      with:
+        artifact_name: ${{ inputs.artifact-name }}

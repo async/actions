@@ -1,0 +1,126 @@
+name: async storage bridge
+description: Read, write, append, or apply safe repo-local storage/change-set files from GitHub Actions.
+inputs:
+  mode:
+    description: Operation, one of read, write, append, or apply-change-set.
+    default: read
+  path:
+    description: Repo-relative storage file path for read, write, or append.
+    default: .async/actions/storage.json
+  value:
+    description: Inline value for write or append.
+    default: ""
+  value-file:
+    description: File containing the value for write or append.
+    default: ""
+  format:
+    description: Value format, one of json, jsonl, or string.
+    default: json
+  change-set:
+    description: Repo-relative JSON change-set file for apply-change-set.
+    default: ""
+  receipt-path:
+    description: Repo-relative JSON receipt path written by the action.
+    default: .async/actions/receipts/storage-receipt.json
+  allow-workflow-paths:
+    description: Allow change sets to write .github/workflows paths.
+    default: "false"
+  allowed-paths:
+    description: Optional newline or comma separated allowed path globs.
+    default: ""
+  commit:
+    description: Commit changed files with git.
+    default: "false"
+  push:
+    description: Push the committed branch to origin.
+    default: "false"
+  pull-request:
+    description: Create or reuse a pull request for the committed branch.
+    default: "false"
+  branch:
+    description: Branch to create or update when committing.
+    default: ""
+  base-branch:
+    description: Pull request base branch.
+    default: ""
+  commit-message:
+    description: Commit message.
+    default: Apply Async storage change
+  pr-title:
+    description: Pull request title.
+    default: Apply Async storage change
+  pr-body:
+    description: Pull request body.
+    default: Created by async/actions/storage.
+  repository:
+    description: GitHub repository in owner/name form.
+    default: ""
+  github-token:
+    description: GitHub token explicitly passed by the caller for gh operations.
+    default: ""
+  upload-receipt:
+    description: Upload the receipt JSON as an artifact.
+    default: "true"
+  artifact-name:
+    description: Receipt artifact name.
+    default: async-storage-receipt
+  working-directory:
+    description: Checked-out repository directory.
+    default: "."
+outputs:
+  path:
+    description: Repo-relative storage path.
+    value: ${{ steps.storage.outputs.path }}
+  exists:
+    description: Whether the storage path existed for read mode.
+    value: ${{ steps.storage.outputs.exists }}
+  value:
+    description: Storage value for read mode.
+    value: ${{ steps.storage.outputs.value }}
+  changed:
+    description: Whether the action changed files.
+    value: ${{ steps.storage.outputs.changed }}
+  receipt-path:
+    description: Repo-relative receipt path.
+    value: ${{ steps.storage.outputs.receipt-path }}
+  commit-sha:
+    description: Commit SHA created or observed after commit.
+    value: ${{ steps.storage.outputs.commit-sha }}
+  pull-request-url:
+    description: Pull request URL created or reused when requested.
+    value: ${{ steps.storage.outputs.pull-request-url }}
+runs:
+  using: composite
+  steps:
+    - name: Run async storage bridge
+      id: storage
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/storage.mjs"
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_VALUE: ${{ inputs.value }}
+        INPUT_VALUE_FILE: ${{ inputs.value-file }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_CHANGE_SET: ${{ inputs.change-set }}
+        INPUT_RECEIPT_PATH: ${{ inputs.receipt-path }}
+        INPUT_ALLOW_WORKFLOW_PATHS: ${{ inputs.allow-workflow-paths }}
+        INPUT_ALLOWED_PATHS: ${{ inputs.allowed-paths }}
+        INPUT_COMMIT: ${{ inputs.commit }}
+        INPUT_PUSH: ${{ inputs.push }}
+        INPUT_PULL_REQUEST: ${{ inputs.pull-request }}
+        INPUT_BRANCH: ${{ inputs.branch }}
+        INPUT_BASE_BRANCH: ${{ inputs.base-branch }}
+        INPUT_COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        INPUT_PR_TITLE: ${{ inputs.pr-title }}
+        INPUT_PR_BODY: ${{ inputs.pr-body }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+        GH_TOKEN: ${{ inputs.github-token }}
+    - name: Upload storage receipt
+      if: ${{ always() && inputs.upload-receipt != 'false' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.working-directory }}/${{ steps.storage.outputs.receipt-path }}
+        if-no-files-found: ignore

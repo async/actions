@@ -1,0 +1,23 @@
+{
+  "name": "async-actions",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reusable GitHub composite actions for Async generated workflows.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/async/actions.git"
+  },
+  "bugs": {
+    "url": "https://github.com/async/actions/issues"
+  },
+  "homepage": "https://github.com/async/actions#readme",
+  "scripts": {
+    "check": "node scripts/check-actions.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -1,0 +1,35 @@
+name: async matrix
+description: Render matrix JSON for downstream jobs using fromJSON(...).
+inputs:
+  mode:
+    description: Matrix source, one of runs-on, file, or json.
+    default: runs-on
+  runs-on:
+    description: Newline or comma runner specs; use + to produce runner arrays.
+    default: ubuntu-latest
+  file:
+    description: JSON file path when mode=file.
+    default: ""
+  json:
+    description: Inline JSON when mode=json.
+    default: "{}"
+  working-directory:
+    description: Directory for file mode.
+    default: "."
+outputs:
+  matrix:
+    description: Matrix JSON string.
+    value: ${{ steps.matrix.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - name: Render matrix
+      id: matrix
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/matrix.mjs"
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_RUNS_ON: ${{ inputs.runs-on }}
+        INPUT_FILE: ${{ inputs.file }}
+        INPUT_JSON: ${{ inputs.json }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}

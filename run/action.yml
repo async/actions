@@ -1,0 +1,58 @@
+name: async pipeline run
+description: Run async-pipeline jobs or tasks and preserve .async/runs evidence.
+inputs:
+  command:
+    description: Explicit shell command to run instead of a pipeline job or task.
+    default: ""
+  job:
+    description: async-pipeline job name.
+    default: ""
+  task:
+    description: async-pipeline task name.
+    default: ""
+  execution:
+    description: Optional execution id forwarded to async-pipeline.
+    default: ""
+  check-generated:
+    description: Whether to run async-pipeline github check first.
+    default: "true"
+  upload-evidence:
+    description: Whether to upload .async/runs as an artifact.
+    default: "always"
+  artifact-name:
+    description: Artifact name for uploaded evidence.
+    default: async-runs
+  working-directory:
+    description: Directory where async-pipeline commands run.
+    default: "."
+outputs:
+  artifact-name:
+    description: Evidence artifact name.
+    value: ${{ inputs.artifact-name }}
+runs:
+  using: composite
+  steps:
+    - name: Run async pipeline
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/run.mjs"
+      env:
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_JOB: ${{ inputs.job }}
+        INPUT_TASK: ${{ inputs.task }}
+        INPUT_EXECUTION: ${{ inputs.execution }}
+        INPUT_CHECK_GENERATED: ${{ inputs.check-generated }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+    - name: Explain async evidence
+      if: ${{ always() }}
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/run.mjs"
+      env:
+        INPUT_PHASE: explain
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+    - name: Upload async evidence
+      if: ${{ always() && inputs.upload-evidence != 'false' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.working-directory }}/.async/runs
+        if-no-files-found: ignore

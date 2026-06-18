@@ -1,0 +1,49 @@
+name: async package preview
+description: Publish same-repo PR/main preview packages to GitHub Packages and maintain install comments.
+inputs:
+  package-path:
+    description: Package directory containing package.json.
+    default: "."
+  target-registry:
+    description: GitHub Packages registry URL.
+    default: https://npm.pkg.github.com
+  namespace:
+    description: Preview package namespace.
+    default: ""
+  mode:
+    description: Preview mode, pr or main.
+    default: pr
+  comment:
+    description: Whether PR previews maintain an install comment.
+    default: "true"
+  token-env-name:
+    description: Name of the env var containing the token supplied by the caller.
+    default: GITHUB_TOKEN
+  working-directory:
+    description: Directory containing package-path.
+    default: "."
+outputs:
+  package-spec:
+    description: Published preview package spec.
+    value: ${{ steps.preview.outputs.package-spec }}
+  published-version:
+    description: Published preview version.
+    value: ${{ steps.preview.outputs.published-version }}
+  dist-tag:
+    description: Preview dist-tag.
+    value: ${{ steps.preview.outputs.dist-tag }}
+runs:
+  using: composite
+  steps:
+    - name: Publish package preview
+      id: preview
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/preview.mjs"
+      env:
+        INPUT_PACKAGE_PATH: ${{ inputs.package-path }}
+        INPUT_TARGET_REGISTRY: ${{ inputs.target-registry }}
+        INPUT_NAMESPACE: ${{ inputs.namespace }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_COMMENT: ${{ inputs.comment }}
+        INPUT_TOKEN_ENV_NAME: ${{ inputs.token-env-name }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
