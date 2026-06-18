@@ -1,6 +1,6 @@
 {
   "name": "async-actions",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "type": "module",
   "description": "Reusable GitHub composite actions for Async generated workflows.",

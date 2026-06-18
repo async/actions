@@ -19,7 +19,9 @@ const tokenEnvName = input("token-env-name", registry.includes("npm.pkg.github.c
 const { packageDir, manifest } = packageContext(packagePath);
 const version = input("version", manifest.version);
 const spec = `${manifest.name}@${version}`;
-const npmAuth = configureNpmAuth(registry, tokenEnvName);
+const npmAuth = mode === "npm" || mode === "github-packages"
+  ? configureNpmAuth(registry, tokenEnvName)
+  : undefined;
 
 async function ensureVersionExists(targetSpec, targetRegistry) {
   let lastView;

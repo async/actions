@@ -15,5 +15,7 @@ Keep each action small, explicit, and callable from generated workflows.
   Do not add a bundled GitHub API client unless a CLI cannot express the job.
 - Composite actions must expose all privileged inputs explicitly. Do not infer
   write access or token names.
+- Executable changes are owner-only: external reports may come through issues
+  or advisories, but maintainers write action metadata, helper scripts, and
+  package metadata before `@async/pipeline` pins a reviewed commit SHA.
 - When editing action metadata, run `npm run check`.
-

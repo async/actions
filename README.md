@@ -25,6 +25,17 @@ These actions do not own workflow-level behavior. Callers must grant permissions
 and pass tokens explicitly. Network behavior is intentionally visible in
 generated GitHub Actions instead of being bundled inside normal package installs.
 
+Generated Async workflows should pin these actions to reviewed full commit SHAs.
+Compatibility tags such as `v0` may remain human-facing labels, but moving a tag
+must not change already-generated privileged workflow behavior.
+
+## Governance
+
+Executable changes are owner-only. External bug reports and security reports are
+welcome through issues or advisories, but maintainers write action metadata,
+helper scripts, and package metadata. A maintainer review is required before
+`@async/pipeline` updates its generated action manifest to a new commit SHA.
+
 ## Actions-Only Storage Bridge
 
 `async/actions/storage` is the fallback path for teams that cannot install the
@@ -32,7 +43,7 @@ Async GitHub App yet. It works inside a normal checked-out repository with the
 caller-provided `GITHUB_TOKEN` permissions:
 
 ```yaml
-- uses: async/actions/storage@v0
+- uses: async/actions/storage@<reviewed-full-sha> # v0.1.x
   with:
     mode: apply-change-set
     change-set: .async/inbox/change-set.json
