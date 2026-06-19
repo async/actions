@@ -1,0 +1,80 @@
+name: async contract
+description: Run Async contract and schema checks, then write bounded evidence reports.
+inputs:
+  mode:
+    description: Contract mode, one of report, check, strict, or release.
+    default: report
+  checks:
+    description: Newline or comma separated checks, such as api, claims, schema.
+    default: api,claims
+  package-path:
+    description: Package or repo path to inspect.
+    default: "."
+  schema-sources:
+    description: Newline or comma separated repo-local JSON schema or data files/globs.
+    default: ""
+  evidence-dir:
+    description: Directory for contract evidence.
+    default: .async/contract
+  annotations:
+    description: Whether findings may be emitted as annotations by future action revisions.
+    default: "true"
+  fail-on:
+    description: Blocking policy supplied by the generated workflow.
+    default: generated-policy
+  api-command:
+    description: Optional local command that runs API contract checks.
+    default: ""
+  claims-command:
+    description: Optional local command that runs claim coverage checks.
+    default: ""
+  schema-command:
+    description: Optional local command that runs schema checks before local JSON validation.
+    default: ""
+  working-directory:
+    description: Checked-out repository directory.
+    default: "."
+outputs:
+  status:
+    description: Contract status.
+    value: ${{ steps.contract.outputs.status }}
+  evidence-dir:
+    description: Contract evidence directory.
+    value: ${{ steps.contract.outputs.evidence-dir }}
+  manifest-path:
+    description: Contract manifest path.
+    value: ${{ steps.contract.outputs.manifest-path }}
+  api-report:
+    description: API contract report path.
+    value: ${{ steps.contract.outputs.api-report }}
+  claims-report:
+    description: Claims report path.
+    value: ${{ steps.contract.outputs.claims-report }}
+  schema-report:
+    description: Schema report path.
+    value: ${{ steps.contract.outputs.schema-report }}
+  breaking-change-count:
+    description: Number of blocking API or schema findings.
+    value: ${{ steps.contract.outputs.breaking-change-count }}
+  unresolved-claim-count:
+    description: Number of unresolved claim findings.
+    value: ${{ steps.contract.outputs.unresolved-claim-count }}
+runs:
+  using: composite
+  steps:
+    - name: Run contract checks
+      id: contract
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/contract.mjs"
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_CHECKS: ${{ inputs.checks }}
+        INPUT_PACKAGE_PATH: ${{ inputs.package-path }}
+        INPUT_SCHEMA_SOURCES: ${{ inputs.schema-sources }}
+        INPUT_EVIDENCE_DIR: ${{ inputs.evidence-dir }}
+        INPUT_ANNOTATIONS: ${{ inputs.annotations }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_API_COMMAND: ${{ inputs.api-command }}
+        INPUT_CLAIMS_COMMAND: ${{ inputs.claims-command }}
+        INPUT_SCHEMA_COMMAND: ${{ inputs.schema-command }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}

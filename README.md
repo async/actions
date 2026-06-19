@@ -17,6 +17,7 @@ step-level actions that generated workflows call.
 | `async/actions/doctor` | Run `async-release` package planning, inspection, release-note rendering, and doctor evidence commands. |
 | `async/actions/preview` | Publish same-repo PR/main preview packages to GitHub Packages and emit preview comment bodies. |
 | `async/actions/comment` | Create or update idempotent comments, append job summaries, and emit structured workflow annotations. |
+| `async/actions/contract` | Run API, claims, and schema contract checks and write bounded evidence reports. |
 | `async/actions/dependabot-merge` | Validate Dependabot metadata, approve, wait for checks, and squash-merge. |
 | `async/actions/matrix` | Produce matrix JSON for downstream `fromJSON(...)` jobs. |
 | `async/actions/storage` | Read/write repo-local state, apply safe change sets, and emit receipts for Actions-only users who cannot install the GitHub App. |
@@ -88,6 +89,16 @@ explicit task outputs such as patches or reports. The action records paths,
 kinds, sizes, and hashes, writes a receipt for `async/actions/evidence`, and can
 emit a bounded comment body for `async/actions/comment`. It does not run agents,
 choose models, apply patches, or paste large artifacts into comments.
+
+## Contract Evidence
+
+`async/actions/contract` writes manifest-backed evidence for API, claims, and
+schema checks. Generated workflows choose `mode: report`, `check`, `strict`, or
+`release`; the action records status and findings, while the caller workflow
+owns whether those findings block the job. Optional command inputs let generated
+workflows run package-specific CLIs from the checked-out repo. Schema sources are
+validated from repo-local JSON files or globs, and evidence stays under
+`.async/contract`.
 
 ## Source Impact
 
