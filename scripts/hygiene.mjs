@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { boolInput, cwdFromInput, input, output, parseList, resolveRepoPath, run, summary } from "./lib.mjs";
 
@@ -90,10 +90,18 @@ if (status === "failed" && blocksJob()) {
 }
 
 function defaultHygieneCommand() {
-  const args = ["async-hygiene", "check", "--format", "json", "--cwd", packagePath];
+  const args = [hygieneBinary(), "check", "--format", "json", "--cwd", packagePath];
   const cliMode = cliModeForProfiles(profiles);
   if (cliMode) args.push("--mode", cliMode);
   return args.map(shellWord).join(" ");
+}
+
+function hygieneBinary() {
+  const candidates = [
+    resolve(cwd, "node_modules/.bin/async-hygiene"),
+    resolve(cwd, packagePath, "node_modules/.bin/async-hygiene")
+  ];
+  return candidates.find((candidate) => existsSync(candidate)) ?? "async-hygiene";
 }
 
 function runCommand(command) {
