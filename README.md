@@ -97,8 +97,8 @@ schema checks. Generated workflows choose `mode: report`, `check`, `strict`, or
 `release`; the action records status and findings, while the caller workflow
 owns whether those findings block the job. Optional command inputs let generated
 workflows run package-specific CLIs from the checked-out repo. Schema sources are
-validated from repo-local JSON files or globs, and evidence stays under
-`.async/contract`.
+validated from repo-local JSON files or globs, and generated workflows can set
+the schema report path while evidence stays under `.async/contract`.
 
 ## Source Impact
 

@@ -8,6 +8,10 @@ const mode = input("mode", "report").trim();
 const checks = normalizeChecks(parseList(input("checks", "api,claims")));
 const packagePath = input("package-path", ".").trim() || ".";
 const evidenceDir = normalizeRepoPath(input("evidence-dir", ".async/contract"), "evidence-dir");
+const schemaOutputInput = input("schema-output", "").trim();
+const schemaOutput = schemaOutputInput
+  ? normalizeRepoPath(schemaOutputInput, "schema-output")
+  : normalizeRepoPath(join(evidenceDir, "schema.json"), "schema-output");
 const annotations = boolInput("annotations", true);
 const failOn = input("fail-on", "generated-policy").trim() || "generated-policy";
 
@@ -115,7 +119,7 @@ function runReportCommand(kind, command, fallbackPath) {
 }
 
 function runSchemaCheck() {
-  const reportPath = reportPathFor("schema", ".async/contract/schema.json");
+  const reportPath = resolve(cwd, schemaOutput);
   const command = input("schema-command", "").trim();
   const commandResult = command ? runCommand("schema", command) : { status: "observed", stdout: "", stderr: "", command: "" };
   const sources = parseList(input("schema-sources", ""))

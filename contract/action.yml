@@ -13,6 +13,9 @@ inputs:
   schema-sources:
     description: Newline or comma separated repo-local JSON schema or data files/globs.
     default: ""
+  schema-output:
+    description: Repo-local path for the schema evidence JSON report.
+    default: ""
   evidence-dir:
     description: Directory for contract evidence.
     default: .async/contract
@@ -71,6 +74,7 @@ runs:
         INPUT_CHECKS: ${{ inputs.checks }}
         INPUT_PACKAGE_PATH: ${{ inputs.package-path }}
         INPUT_SCHEMA_SOURCES: ${{ inputs.schema-sources }}
+        INPUT_SCHEMA_OUTPUT: ${{ inputs.schema-output }}
         INPUT_EVIDENCE_DIR: ${{ inputs.evidence-dir }}
         INPUT_ANNOTATIONS: ${{ inputs.annotations }}
         INPUT_FAIL_ON: ${{ inputs.fail-on }}

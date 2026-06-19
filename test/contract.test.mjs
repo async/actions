@@ -115,6 +115,28 @@ test("contract action validates schema sources and rejects unsafe paths", () => 
   }
 });
 
+test("contract action honors generated schema output paths", () => {
+  const dir = mkdtempSync(join(tmpdir(), "async-actions-contract-schema-output-"));
+  try {
+    mkdirSync(join(dir, "data"), { recursive: true });
+    writeFileSync(join(dir, "data/user.json"), JSON.stringify({ id: "user-1" }), "utf8");
+
+    const result = runContract(dir, {
+      INPUT_MODE: "report",
+      INPUT_CHECKS: "schema",
+      INPUT_SCHEMA_SOURCES: "data/*.json",
+      INPUT_SCHEMA_OUTPUT: ".async/contract/generated/schema-report.json"
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const manifest = JSON.parse(readFileSync(join(dir, ".async/contract/manifest.json"), "utf8"));
+    assert.equal(manifest.reports.schema.path, ".async/contract/generated/schema-report.json");
+    assert.equal(existsSync(join(dir, ".async/contract/generated/schema-report.json")), true);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 function runContract(cwd, env) {
   return spawnSync(process.execPath, [script.pathname], {
     cwd,
