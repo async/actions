@@ -1,0 +1,69 @@
+name: async hygiene
+description: Run Async hygiene checks and write bounded evidence reports.
+inputs:
+  mode:
+    description: Hygiene mode, one of report, check, strict, or release.
+    default: report
+  profiles:
+    description: Newline or comma separated hygiene profiles selected by the generated workflow.
+    default: package,github,docs
+  package-path:
+    description: Package or repo path to inspect.
+    default: "."
+  evidence-dir:
+    description: Directory for hygiene evidence.
+    default: .async/hygiene
+  annotations:
+    description: Whether findings may be emitted as annotations by future action revisions.
+    default: "true"
+  fail-on:
+    description: Blocking policy supplied by the generated workflow.
+    default: generated-policy
+  release-gate:
+    description: Whether release events should treat report mode as blocking.
+    default: "false"
+  hygiene-command:
+    description: Optional local command that runs async-hygiene and prints JSON.
+    default: ""
+  working-directory:
+    description: Checked-out repository directory.
+    default: "."
+outputs:
+  status:
+    description: Hygiene status.
+    value: ${{ steps.hygiene.outputs.status }}
+  evidence-dir:
+    description: Hygiene evidence directory.
+    value: ${{ steps.hygiene.outputs.evidence-dir }}
+  manifest-path:
+    description: Hygiene manifest path.
+    value: ${{ steps.hygiene.outputs.manifest-path }}
+  findings-path:
+    description: Hygiene findings path.
+    value: ${{ steps.hygiene.outputs.findings-path }}
+  summary-path:
+    description: Hygiene summary path.
+    value: ${{ steps.hygiene.outputs.summary-path }}
+  finding-count:
+    description: Number of hygiene findings.
+    value: ${{ steps.hygiene.outputs.finding-count }}
+  blocking-finding-count:
+    description: Number of blocking hygiene findings.
+    value: ${{ steps.hygiene.outputs.blocking-finding-count }}
+runs:
+  using: composite
+  steps:
+    - name: Run hygiene checks
+      id: hygiene
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/hygiene.mjs"
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_PROFILES: ${{ inputs.profiles }}
+        INPUT_PACKAGE_PATH: ${{ inputs.package-path }}
+        INPUT_EVIDENCE_DIR: ${{ inputs.evidence-dir }}
+        INPUT_ANNOTATIONS: ${{ inputs.annotations }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_RELEASE_GATE: ${{ inputs.release-gate }}
+        INPUT_HYGIENE_COMMAND: ${{ inputs.hygiene-command }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}

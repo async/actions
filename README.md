@@ -18,6 +18,7 @@ step-level actions that generated workflows call.
 | `async/actions/preview` | Publish same-repo PR/main preview packages to GitHub Packages and emit preview comment bodies. |
 | `async/actions/comment` | Create or update idempotent comments, append job summaries, and emit structured workflow annotations. |
 | `async/actions/contract` | Run API, claims, and schema contract checks and write bounded evidence reports. |
+| `async/actions/hygiene` | Run Async hygiene checks and write manifest, findings, and summary evidence. |
 | `async/actions/dependabot-merge` | Validate Dependabot metadata, approve, wait for checks, and squash-merge. |
 | `async/actions/matrix` | Produce matrix JSON for downstream `fromJSON(...)` jobs. |
 | `async/actions/storage` | Read/write repo-local state, apply safe change sets, and emit receipts for Actions-only users who cannot install the GitHub App. |
@@ -99,6 +100,16 @@ owns whether those findings block the job. Optional command inputs let generated
 workflows run package-specific CLIs from the checked-out repo. Schema sources are
 validated from repo-local JSON files or globs, and generated workflows can set
 the schema report path while evidence stays under `.async/contract`.
+
+## Hygiene Evidence
+
+`async/actions/hygiene` writes manifest-backed evidence for repo, GitHub, docs,
+package, release, and mixed hygiene profiles. Generated workflows choose the
+profile list, `mode: report`, `check`, `strict`, or `release`, release-gate
+behavior, and whether findings are advisory or blocking. The action invokes
+`async-hygiene check --format json`, normalizes failures into findings, and
+writes bounded evidence under `.async/hygiene` without choosing repository
+policy itself.
 
 ## Source Impact
 
