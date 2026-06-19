@@ -161,7 +161,7 @@ function runPreview(context, env = {}) {
       INPUT_MODE: "pr",
       INPUT_COMMENT: "true",
       INPUT_TARGET_REGISTRY: "https://npm.pkg.github.com",
-      INPUT_RELEASE_PACKAGE: "github:async/release#v0.1.4",
+      INPUT_RELEASE_PACKAGE: "github:async/release#v0.1.5",
       ...env
     }
   });

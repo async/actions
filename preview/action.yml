@@ -21,7 +21,7 @@ inputs:
     default: GITHUB_TOKEN
   release-package:
     description: Package source for the released @async/release CLI.
-    default: github:async/release#v0.1.4
+    default: github:async/release#v0.1.5
   move-dist-tag:
     description: Whether this run is allowed to move the mutable preview dist-tag.
     default: "true"
