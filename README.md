@@ -20,6 +20,7 @@ step-level actions that generated workflows call.
 | `async/actions/storage` | Read/write repo-local state, apply safe change sets, and emit receipts for Actions-only users who cannot install the GitHub App. |
 | `async/actions/evidence` | Collect, upload, and merge manifest-backed run evidence artifacts without copying raw file contents into the manifest. |
 | `async/actions/source-impact` | Read generated source plans, emit impact matrices, validate source checkout metadata, run generated prepare commands, and write source receipts. |
+| `async/actions/cache` | Restore, save, and summarize Async task caches from generated cache manifests. |
 
 ## Boundary
 
@@ -86,6 +87,18 @@ the action writes receipts under `.async/actions/receipts`.
 Git refs must be full SHAs or generated-safe refs such as `refs/heads/*`,
 `refs/tags/*`, or `refs/pull/<number>/merge`. Prepare commands come from the
 generated plan and are printed before execution.
+
+## Task Cache
+
+`async/actions/cache` restores and saves task-cache paths from a generated
+`@async/pipeline` manifest. The manifest owns cache keys, path lists, write
+eligibility, and trust level; the action validates that metadata, delegates to
+pinned `actions/cache` restore/save steps, and writes cache receipts under
+`.async/actions/receipts`.
+
+Use `trust: read-only` for untrusted pull requests. Save mode requires
+`trust: read-write`; read-only saves are skipped and recorded rather than
+silently writing cache state.
 
 ## Local Checks
 

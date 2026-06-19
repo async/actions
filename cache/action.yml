@@ -1,0 +1,84 @@
+name: async cache
+description: Restore, save, and summarize Async task caches from generated pipeline manifests.
+inputs:
+  mode:
+    description: Operation, one of restore, save, or summary.
+    default: restore
+  manifest:
+    description: Generated repo-relative cache manifest JSON file.
+    default: .async/actions/cache/cache-manifest.json
+  trust:
+    description: Cache trust level, read-only or read-write.
+    default: read-only
+  receipt-path:
+    description: Repo-relative JSON receipt output path.
+    default: ""
+  fail-on-miss:
+    description: Whether restore mode should fail when the cache is missed.
+    default: "false"
+  working-directory:
+    description: Checked-out repository directory.
+    default: "."
+outputs:
+  cache-hit:
+    description: Whether restore mode reported an exact cache hit.
+    value: ${{ steps.cache-receipt.outputs.cache-hit || steps.cache-plan.outputs.cache-hit }}
+  restored-count:
+    description: Number of manifest entries restored or represented by a hit.
+    value: ${{ steps.cache-receipt.outputs.restored-count }}
+  saved-count:
+    description: Number of manifest entries eligible for save.
+    value: ${{ steps.cache-receipt.outputs.saved-count }}
+  receipt-path:
+    description: Repo-relative receipt path.
+    value: ${{ steps.cache-receipt.outputs.receipt-path || steps.cache-plan.outputs.receipt-path }}
+  summary-path:
+    description: Repo-relative summary path.
+    value: ${{ steps.cache-receipt.outputs.summary-path || steps.cache-plan.outputs.summary-path }}
+runs:
+  using: composite
+  steps:
+    - name: Prepare cache manifest
+      id: cache-plan
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/cache.mjs"
+      env:
+        ASYNC_ACTIONS_CACHE_PHASE: plan
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_MANIFEST: ${{ inputs.manifest }}
+        INPUT_TRUST: ${{ inputs.trust }}
+        INPUT_RECEIPT_PATH: ${{ inputs.receipt-path }}
+        INPUT_FAIL_ON_MISS: ${{ inputs.fail-on-miss }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+
+    - name: Restore Async task cache
+      id: cache-restore
+      if: ${{ inputs.mode == 'restore' && steps.cache-plan.outputs.paths != '' }}
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+      with:
+        path: ${{ steps.cache-plan.outputs.paths }}
+        key: ${{ steps.cache-plan.outputs.primary-key }}
+        restore-keys: ${{ steps.cache-plan.outputs.restore-keys }}
+
+    - name: Save Async task cache
+      id: cache-save
+      if: ${{ inputs.mode == 'save' && inputs.trust == 'read-write' && steps.cache-plan.outputs.paths != '' }}
+      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+      with:
+        path: ${{ steps.cache-plan.outputs.paths }}
+        key: ${{ steps.cache-plan.outputs.primary-key }}
+
+    - name: Write cache receipt
+      id: cache-receipt
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/cache.mjs"
+      env:
+        ASYNC_ACTIONS_CACHE_PHASE: receipt
+        ASYNC_ACTIONS_CACHE_HIT: ${{ steps.cache-restore.outputs.cache-hit }}
+        ASYNC_ACTIONS_CACHE_SAVE_OUTCOME: ${{ steps.cache-save.outcome }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_MANIFEST: ${{ inputs.manifest }}
+        INPUT_TRUST: ${{ inputs.trust }}
+        INPUT_RECEIPT_PATH: ${{ inputs.receipt-path }}
+        INPUT_FAIL_ON_MISS: ${{ inputs.fail-on-miss }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
