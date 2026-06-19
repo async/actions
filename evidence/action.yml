@@ -1,0 +1,95 @@
+name: async evidence
+description: Collect, upload, or merge manifest-backed Async run evidence artifacts.
+inputs:
+  mode:
+    description: Operation, one of collect, upload, or merge.
+    default: collect
+  paths:
+    description: Newline or comma separated repo-local files, directories, or globs to include.
+    default: .async/runs
+  receipt-paths:
+    description: Optional repo-local JSON receipt files or globs to sanitize into the manifest.
+    default: ""
+  manifest-path:
+    description: Repo-relative evidence manifest path.
+    default: .async/evidence/manifest.json
+  summary-path:
+    description: Repo-relative markdown summary path.
+    default: .async/evidence/summary.md
+  artifact-name:
+    description: Evidence artifact name.
+    default: async-evidence
+  artifact-pattern:
+    description: Artifact name pattern downloaded in merge mode.
+    default: async-evidence-*
+  retention-days:
+    description: Artifact retention days.
+    default: "14"
+  if-no-files-found:
+    description: Missing evidence behavior, one of ignore, warn, or error.
+    default: warn
+  include-summary:
+    description: Whether to write and publish a markdown summary.
+    default: "true"
+  merge-directory:
+    description: Directory where downloaded manifests are read in merge mode.
+    default: .async/evidence/downloaded
+  download-artifacts:
+    description: Download matching artifacts before merge mode.
+    default: "true"
+  upload-artifact:
+    description: Upload the manifest-backed evidence artifact after the script succeeds.
+    default: "true"
+  working-directory:
+    description: Checked-out repository directory.
+    default: "."
+outputs:
+  manifest-path:
+    description: Repo-relative evidence manifest path.
+    value: ${{ steps.evidence.outputs.manifest-path }}
+  artifact-name:
+    description: Evidence artifact name.
+    value: ${{ steps.evidence.outputs.artifact-name }}
+  file-count:
+    description: Number of manifest file entries.
+    value: ${{ steps.evidence.outputs.file-count }}
+  byte-count:
+    description: Total bytes represented by manifest file entries.
+    value: ${{ steps.evidence.outputs.byte-count }}
+  summary-path:
+    description: Repo-relative markdown summary path.
+    value: ${{ steps.evidence.outputs.summary-path }}
+runs:
+  using: composite
+  steps:
+    - name: Download evidence artifacts
+      if: ${{ inputs.mode == 'merge' && inputs.download-artifacts != 'false' }}
+      uses: actions/download-artifact@v4
+      with:
+        pattern: ${{ inputs.artifact-pattern }}
+        path: ${{ inputs.working-directory }}/${{ inputs.merge-directory }}
+        merge-multiple: false
+    - name: Build evidence manifest
+      id: evidence
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/evidence.mjs"
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_PATHS: ${{ inputs.paths }}
+        INPUT_RECEIPT_PATHS: ${{ inputs.receipt-paths }}
+        INPUT_MANIFEST_PATH: ${{ inputs.manifest-path }}
+        INPUT_SUMMARY_PATH: ${{ inputs.summary-path }}
+        INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        INPUT_RETENTION_DAYS: ${{ inputs.retention-days }}
+        INPUT_IF_NO_FILES_FOUND: ${{ inputs.if-no-files-found }}
+        INPUT_INCLUDE_SUMMARY: ${{ inputs.include-summary }}
+        INPUT_MERGE_DIRECTORY: ${{ inputs.merge-directory }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+    - name: Upload evidence artifact
+      if: ${{ inputs.upload-artifact != 'false' && steps.evidence.outcome == 'success' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.evidence.outputs.artifact-name }}
+        path: ${{ steps.evidence.outputs.artifact-paths }}
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}

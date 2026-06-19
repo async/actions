@@ -18,6 +18,7 @@ step-level actions that generated workflows call.
 | `async/actions/dependabot-merge` | Validate Dependabot metadata, approve, wait for checks, and squash-merge. |
 | `async/actions/matrix` | Produce matrix JSON for downstream `fromJSON(...)` jobs. |
 | `async/actions/storage` | Read/write repo-local state, apply safe change sets, and emit receipts for Actions-only users who cannot install the GitHub App. |
+| `async/actions/evidence` | Collect, upload, and merge manifest-backed run evidence artifacts without copying raw file contents into the manifest. |
 
 ## Boundary
 
@@ -59,6 +60,19 @@ Change sets use the same safe file shape as `@async/github-app`: `files` entries
 with `path`, `action: "upsert" | "delete"`, and optional `content`. Absolute
 paths, `..`, duplicate paths, empty path segments, and `.github/workflows/**`
 writes are rejected unless the caller explicitly enables workflow paths.
+
+## Evidence Artifacts
+
+`async/actions/evidence` writes a JSON manifest for explicit repo-local files,
+directories, and globs, then can upload that manifest-backed artifact or merge
+downloaded manifests into one index. Manifest file entries include path, kind,
+size, and SHA-256 digest; they do not include raw file contents, logs, or
+environment dumps.
+
+Bridge and storage receipt JSON can be passed through `receipt-paths`. The action
+keeps only bounded metadata such as change-set id, lease id, worker, status,
+commit SHA, pull request URL, and changed paths. It rejects absolute paths and
+`..` segments before reading evidence inputs.
 
 ## Local Checks
 
