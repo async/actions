@@ -1,0 +1,73 @@
+name: async agent evidence
+description: Collect, validate, bundle, and summarize Async agent run evidence.
+inputs:
+  mode:
+    description: Operation, one of collect, redact, comment, or bundle.
+    default: collect
+  run-directory:
+    description: Repo-local Async runs directory.
+    default: .async/runs
+  outputs:
+    description: Newline or comma separated explicit agent output files to include.
+    default: ""
+  evidence-path:
+    description: Repo-relative agent evidence manifest path.
+    default: .async/agent-evidence/manifest.json
+  bundle-path:
+    description: Repo-relative agent evidence bundle path.
+    default: .async/agent-evidence/bundle.json
+  receipt-path:
+    description: Repo-relative receipt path for async/actions/evidence.
+    default: .async/actions/receipts/agent-evidence.json
+  comment:
+    description: Whether to emit a bounded comment body output.
+    default: "false"
+  comment-marker:
+    description: Stable marker for the downstream comment action.
+    default: async-agent-evidence
+  max-bytes:
+    description: Maximum bytes scanned from each text artifact for redaction checks.
+    default: "20000"
+  working-directory:
+    description: Checked-out repository directory.
+    default: "."
+outputs:
+  evidence-path:
+    description: Repo-relative evidence manifest path.
+    value: ${{ steps.agent-evidence.outputs.evidence-path }}
+  bundle-path:
+    description: Repo-relative bundle path.
+    value: ${{ steps.agent-evidence.outputs.bundle-path }}
+  patch-count:
+    description: Number of explicit patch or diff outputs.
+    value: ${{ steps.agent-evidence.outputs.patch-count }}
+  report-count:
+    description: Number of explicit report outputs.
+    value: ${{ steps.agent-evidence.outputs.report-count }}
+  redacted:
+    description: true when redaction validation passed.
+    value: ${{ steps.agent-evidence.outputs.redacted }}
+  comment-body:
+    description: Bounded markdown summary for async/actions/comment.
+    value: ${{ steps.agent-evidence.outputs.comment-body }}
+  comment-marker:
+    description: Stable marker for async/actions/comment.
+    value: ${{ steps.agent-evidence.outputs.comment-marker }}
+runs:
+  using: composite
+  steps:
+    - name: Build agent evidence
+      id: agent-evidence
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/agent-evidence.mjs"
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_RUN_DIRECTORY: ${{ inputs.run-directory }}
+        INPUT_OUTPUTS: ${{ inputs.outputs }}
+        INPUT_EVIDENCE_PATH: ${{ inputs.evidence-path }}
+        INPUT_BUNDLE_PATH: ${{ inputs.bundle-path }}
+        INPUT_RECEIPT_PATH: ${{ inputs.receipt-path }}
+        INPUT_COMMENT: ${{ inputs.comment }}
+        INPUT_COMMENT_MARKER: ${{ inputs.comment-marker }}
+        INPUT_MAX_BYTES: ${{ inputs.max-bytes }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}

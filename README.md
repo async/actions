@@ -21,6 +21,7 @@ step-level actions that generated workflows call.
 | `async/actions/matrix` | Produce matrix JSON for downstream `fromJSON(...)` jobs. |
 | `async/actions/storage` | Read/write repo-local state, apply safe change sets, and emit receipts for Actions-only users who cannot install the GitHub App. |
 | `async/actions/evidence` | Collect, upload, and merge manifest-backed run evidence artifacts without copying raw file contents into the manifest. |
+| `async/actions/agent-evidence` | Collect redacted agent transcripts, context packs, explicit outputs, bundle metadata, and comment handoff bodies. |
 | `async/actions/source-impact` | Read generated source plans, emit impact matrices, validate source checkout metadata, run generated prepare commands, and write source receipts. |
 | `async/actions/cache` | Restore, save, and summarize Async task caches from generated cache manifests. |
 | `async/actions/attest` | Compute subject digests, write package SBOM evidence, validate tarball subjects, and record provenance or attestation verification receipts. |
@@ -78,6 +79,15 @@ Bridge and storage receipt JSON can be passed through `receipt-paths`. The actio
 keeps only bounded metadata such as change-set id, lease id, worker, status,
 commit SHA, pull request URL, and changed paths. It rejects absolute paths and
 `..` segments before reading evidence inputs.
+
+## Agent Evidence
+
+`async/actions/agent-evidence` packages agent run artifacts already written by
+`@async/pipeline`: prompt files, redacted transcripts, failure context packs, and
+explicit task outputs such as patches or reports. The action records paths,
+kinds, sizes, and hashes, writes a receipt for `async/actions/evidence`, and can
+emit a bounded comment body for `async/actions/comment`. It does not run agents,
+choose models, apply patches, or paste large artifacts into comments.
 
 ## Source Impact
 

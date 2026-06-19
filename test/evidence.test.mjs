@@ -18,6 +18,13 @@ test("evidence action collects files, hashes, summaries, and sanitized receipts"
       leaseExpiresAt: "2026-06-18T18:10:00Z",
       worker: "actions",
       status: "applied",
+      evidencePath: ".async/agent-evidence/manifest.json",
+      bundlePath: ".async/agent-evidence/bundle.json",
+      patchCount: 1,
+      reportCount: 1,
+      transcriptCount: 1,
+      contextPackCount: 1,
+      redacted: true,
       token: "should-not-appear",
       files: [{ path: "docs/example.md", action: "upsert", changed: true }]
     }), "utf8");
@@ -39,6 +46,9 @@ test("evidence action collects files, hashes, summaries, and sanitized receipts"
     assert.equal(manifest.files[0].sha256.length, 64);
     assert.equal(manifest.receipts[0].kind, "bridge");
     assert.equal(manifest.receipts[0].leaseId, "lease_1");
+    assert.equal(manifest.receipts[0].bundlePath, ".async/agent-evidence/bundle.json");
+    assert.equal(manifest.receipts[0].patchCount, 1);
+    assert.equal(manifest.receipts[0].redacted, true);
     assert.equal(manifest.receipts[0].files[0].path, "docs/example.md");
     assert.doesNotMatch(manifestText, /should-not-appear/u);
     assert.equal(existsSync(join(dir, ".async/evidence/summary.md")), true);
