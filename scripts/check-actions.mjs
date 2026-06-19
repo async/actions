@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = process.cwd();
-const actionDirs = ["setup", "run", "pages", "publish", "preview", "dependabot-merge", "matrix", "storage", "evidence"];
+const actionDirs = ["setup", "run", "pages", "publish", "preview", "dependabot-merge", "matrix", "storage", "evidence", "source-impact"];
 const failures = [];
 
 for (const dir of actionDirs) {

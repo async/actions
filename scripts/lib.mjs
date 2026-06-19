@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";
 
 export function input(name, fallback = "") {
@@ -102,6 +102,24 @@ export function ensureFile(path, label = path) {
 
 export function ensureParent(path) {
   mkdirSync(dirname(path), { recursive: true });
+}
+
+export function normalizeRepoPath(path, label = "path", options = {}) {
+  const value = String(path ?? "").trim();
+  assertSafeRepoPath(value, options);
+  return value;
+}
+
+export function resolveRepoPath(cwd, path, label = "path", options = {}) {
+  const normalized = normalizeRepoPath(path, label, options);
+  const target = resolve(cwd, normalized);
+  const relativePath = relative(cwd, target);
+  if (relativePath === ".." || relativePath.startsWith(`..${sep}`) || relativePath === "") {
+    if (relativePath !== "") {
+      throw new UnsafeRepoPathError(normalized, `${label} resolves outside the working directory`);
+    }
+  }
+  return target;
 }
 
 export class UnsafeRepoPathError extends Error {

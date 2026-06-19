@@ -1,0 +1,66 @@
+name: async source impact
+description: Plan, validate, prepare, and receipt declared source-impact work for generated workflows.
+inputs:
+  mode:
+    description: Operation, one of plan, checkout, prepare, or receipt.
+    default: plan
+  source-plan:
+    description: Generated repo-relative source plan JSON file.
+    default: .async/actions/source-impact/source-plan.json
+  source-id:
+    description: Declared source id for checkout, prepare, or receipt mode.
+    default: ""
+  ref:
+    description: Explicit ref to validate for git sources.
+    default: ""
+  path:
+    description: Repo-relative source checkout path to validate.
+    default: ""
+  changed-files:
+    description: Optional repo-relative newline-separated changed file list used to conservatively filter matrix rows.
+    default: ""
+  receipt-path:
+    description: Repo-relative JSON receipt output path.
+    default: ""
+  output-matrix:
+    description: Whether plan mode should emit the matrix output.
+    default: "true"
+  working-directory:
+    description: Checked-out repository directory.
+    default: "."
+outputs:
+  matrix:
+    description: Matrix JSON string for fromJSON(...).
+    value: ${{ steps.source-impact.outputs.matrix }}
+  source-id:
+    description: Selected source id.
+    value: ${{ steps.source-impact.outputs.source-id }}
+  source-path:
+    description: Validated repo-relative source checkout path.
+    value: ${{ steps.source-impact.outputs.source-path }}
+  source-count:
+    description: Number of sources in the generated plan.
+    value: ${{ steps.source-impact.outputs.source-count }}
+  changed-source-count:
+    description: Number of source ids matched by changed-files.
+    value: ${{ steps.source-impact.outputs.changed-source-count }}
+  receipt-path:
+    description: Repo-relative receipt path.
+    value: ${{ steps.source-impact.outputs.receipt-path }}
+runs:
+  using: composite
+  steps:
+    - name: Source impact
+      id: source-impact
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/source-impact.mjs"
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_SOURCE_PLAN: ${{ inputs.source-plan }}
+        INPUT_SOURCE_ID: ${{ inputs.source-id }}
+        INPUT_REF: ${{ inputs.ref }}
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_CHANGED_FILES: ${{ inputs.changed-files }}
+        INPUT_RECEIPT_PATH: ${{ inputs.receipt-path }}
+        INPUT_OUTPUT_MATRIX: ${{ inputs.output-matrix }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
