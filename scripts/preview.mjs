@@ -1,5 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { cp } from "node:fs/promises";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { boolInput, configureNpmAuth, cwdFromInput, input, isMissingVersion, npmView, output, packageContext, run, summary } from "./lib.mjs";
@@ -11,24 +10,30 @@ const registry = input("target-registry", "https://npm.pkg.github.com");
 const namespace = input("namespace", process.env.GITHUB_REPOSITORY_OWNER ?? "");
 const shouldComment = boolInput("comment", true);
 const tokenEnvName = input("token-env-name", "GITHUB_TOKEN");
+const releasePackage = input("release-package", "github:async/release#v0.1.3");
+const shouldMoveDistTag = boolInput("move-dist-tag", true);
 const { packageDir, manifest } = packageContext(packagePath);
 const repository = input("repository", process.env.GITHUB_REPOSITORY ?? "");
 const githubSha = process.env.GITHUB_SHA ?? "";
 
 if (!namespace) throw new Error("namespace or GITHUB_REPOSITORY_OWNER is required.");
 if (!repository) throw new Error("repository or GITHUB_REPOSITORY is required.");
-const npmAuth = configureNpmAuth(registry, tokenEnvName);
+let npmAuth;
+let stagingDir;
 
-const leaf = manifest.name.startsWith("@") ? manifest.name.split("/")[1] : manifest.name;
-const mirrorName = `@${namespace.toLowerCase()}/${leaf}`;
-let version;
-let distTag;
+const releaseArgs = [
+  "--package", packagePath,
+  "--mode", mode,
+  "--namespace", namespace,
+  "--source-repository", repository,
+  "--source-sha", githubSha,
+  "--evidence-dir", ".async/release"
+];
 let prNumber;
 let headSha = githubSha;
-
+let skipReason;
 if (mode === "main") {
-  version = `0.0.0-main.sha.${githubSha}`;
-  distTag = "main";
+  if (!githubSha) throw new Error("Main preview needs GITHUB_SHA.");
 } else if (mode === "pr") {
   const event = JSON.parse(process.env.GITHUB_EVENT_PATH ? await import("node:fs/promises").then((fs) => fs.readFile(process.env.GITHUB_EVENT_PATH, "utf8")) : "{}");
   const pr = event.pull_request ?? {};
@@ -36,31 +41,38 @@ if (mode === "main") {
   headSha = pr.head?.sha ?? githubSha;
   const headRepo = pr.head?.repo?.full_name;
   if (headRepo && headRepo !== repository) {
-    console.log(`Skipping preview publish: PR head ${headRepo} is not ${repository}.`);
-    process.exit(0);
+    skipReason = `PR head ${headRepo} is not ${repository}.`;
   }
-  if (!Number.isInteger(prNumber) || prNumber <= 0 || !headSha) {
+  if (!skipReason && (!Number.isInteger(prNumber) || prNumber <= 0 || !headSha)) {
     throw new Error("PR preview needs pull_request.number and pull_request.head.sha.");
   }
-  version = `0.0.0-pr.${prNumber}.sha.${headSha}`;
-  distTag = `pr-${prNumber}`;
+  if (prNumber) releaseArgs.push("--pr-number", String(prNumber));
+  if (headSha) releaseArgs.push("--head-sha", headSha);
 } else {
   throw new Error(`Unsupported preview mode ${mode}. Use pr or main.`);
 }
+if (!shouldComment) releaseArgs.push("--no-comment");
+if (skipReason) releaseArgs.push("--skip-reason", skipReason);
 
-const stagingDir = mkdtempSync(join(tmpdir(), "async-actions-preview-"));
+const plan = runReleasePreview("plan", releaseArgs);
+const { mirrorPackageName, version, distTag, packageSpec } = plan.preview;
+
 try {
-  const staged = {
-    ...manifest,
-    name: mirrorName,
-    version,
-    publishConfig: { registry }
-  };
-  delete staged.scripts;
-  delete staged.devDependencies;
-  writeFileSync(join(stagingDir, "package.json"), `${JSON.stringify(staged, null, 2)}\n`, "utf8");
-  await cp(join(packageDir, "dist"), join(stagingDir, "dist"), { recursive: true });
-  const spec = `${mirrorName}@${version}`;
+  if (plan.skip.shouldSkip) {
+    console.log(`Skipping preview publish: ${plan.skip.reason}`);
+    summary(`### async/actions/preview\n\n- mode: ${mode}\n- package: ${manifest.name}\n- skipped: ${plan.skip.reason}`);
+    process.exit(0);
+  }
+
+  stagingDir = mkdtempSync(join(tmpdir(), "async-actions-preview-"));
+  const stage = runReleasePreview("stage", [
+    ...releaseArgs,
+    "--registry", registry,
+    "--stage-dir", stagingDir
+  ]);
+
+  const spec = packageSpec;
+  npmAuth = configureNpmAuth(registry, tokenEnvName);
   const view = npmView(spec, registry, stagingDir);
   if (view.status === 0) {
     console.log(`${spec} already exists; skipping publish.`);
@@ -68,29 +80,38 @@ try {
     if (!isMissingVersion(view)) throw new Error(`Could not determine whether ${spec} exists.`);
     run("npm", ["publish", "--tag", distTag, "--ignore-scripts", "--registry", registry], { cwd: stagingDir });
   }
-  run("npm", ["dist-tag", "add", spec, distTag, "--registry", registry], { cwd: stagingDir });
-
-  if (mode === "pr" && shouldComment && prNumber) {
-    const target = mirrorName === manifest.name ? `${mirrorName}@${distTag}` : `${manifest.name}@npm:${mirrorName}@${distTag}`;
-    const body = [
-      "### Preview package",
-      "",
-      `Preview for PR head \`${headSha}\`, published as \`${mirrorName}\`.`,
-      "",
-      "```sh",
-      `pnpm add ${target}`,
-      "```"
-    ].join("\n");
-    output("comment-body", body);
-    output("comment-marker", "async-actions-package-preview");
+  if (shouldMoveDistTag) {
+    run("npm", ["dist-tag", "add", spec, distTag, "--registry", registry], { cwd: stagingDir });
+  } else {
+    console.log(`Skipping dist-tag move for ${spec}; move-dist-tag=false.`);
   }
 
-  output("package-spec", `${mirrorName}@${version}`);
+  if (mode === "pr" && shouldComment && prNumber && plan.install?.commentBody) {
+    output("comment-body", plan.install.commentBody);
+    output("comment-marker", plan.install.commentMarker);
+  }
+
+  output("package-spec", packageSpec);
   output("published-version", version);
   output("dist-tag", distTag);
+  summary(`### async/actions/preview\n\n- mode: ${mode}\n- package: ${mirrorPackageName}@${version}\n- dist-tag: ${distTag}${shouldMoveDistTag ? "" : " (not moved)"}\n- staging: ${stage.staging?.path ?? "unknown"}`);
 } finally {
-  rmSync(stagingDir, { recursive: true, force: true });
+  if (stagingDir) rmSync(stagingDir, { recursive: true, force: true });
+  npmAuth?.cleanup();
 }
 
-summary(`### async/actions/preview\n\n- mode: ${mode}\n- package: ${mirrorName}@${version}\n- dist-tag: ${distTag}`);
-npmAuth?.cleanup();
+function runReleasePreview(command, args) {
+  const result = run("npm", [
+    "exec",
+    "--yes",
+    "--package",
+    releasePackage,
+    "--",
+    "async-release",
+    "preview",
+    command,
+    ...args,
+    "--json"
+  ], { cwd, capture: true });
+  return JSON.parse(result.stdout);
+}

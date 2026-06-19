@@ -19,6 +19,12 @@ inputs:
   token-env-name:
     description: Name of the env var containing the token supplied by the caller.
     default: GITHUB_TOKEN
+  release-package:
+    description: Package source for the released @async/release CLI.
+    default: github:async/release#v0.1.3
+  move-dist-tag:
+    description: Whether this run is allowed to move the mutable preview dist-tag.
+    default: "true"
   working-directory:
     description: Directory containing package-path.
     default: "."
@@ -52,4 +58,6 @@ runs:
         INPUT_MODE: ${{ inputs.mode }}
         INPUT_COMMENT: ${{ inputs.comment }}
         INPUT_TOKEN_ENV_NAME: ${{ inputs.token-env-name }}
+        INPUT_RELEASE_PACKAGE: ${{ inputs.release-package }}
+        INPUT_MOVE_DIST_TAG: ${{ inputs.move-dist-tag }}
         INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}

@@ -152,6 +152,15 @@ records bounded evidence such as the release plan, package report, rendered
 release notes, and doctor checks. The action does not infer workflow
 permissions, release package selection, or registry credentials.
 
+## Package Previews
+
+`async/actions/preview` is the privileged executor for preview package writes.
+It calls a released `@async/release` package source for deterministic preview
+identity, staging, install-comment, and evidence data, then keeps npm auth,
+publish, dist-tag, outputs, and summaries inside the action. Generated
+workflows remain responsible for event triggers, permissions, token mapping, and
+stale-head decisions such as setting `move-dist-tag: "false"`.
+
 ## Comments And Annotations
 
 `async/actions/comment` owns idempotent marker management, markdown body loading,
