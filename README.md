@@ -21,6 +21,7 @@ step-level actions that generated workflows call.
 | `async/actions/evidence` | Collect, upload, and merge manifest-backed run evidence artifacts without copying raw file contents into the manifest. |
 | `async/actions/source-impact` | Read generated source plans, emit impact matrices, validate source checkout metadata, run generated prepare commands, and write source receipts. |
 | `async/actions/cache` | Restore, save, and summarize Async task caches from generated cache manifests. |
+| `async/actions/attest` | Compute subject digests, write package SBOM evidence, validate tarball subjects, and record provenance or attestation verification receipts. |
 
 ## Boundary
 
@@ -99,6 +100,15 @@ pinned `actions/cache` restore/save steps, and writes cache receipts under
 Use `trust: read-only` for untrusted pull requests. Save mode requires
 `trust: read-write`; read-only saves are skipped and recorded rather than
 silently writing cache state.
+
+## Attestation Evidence
+
+`async/actions/attest` works from explicit generated subjects. Digest and SBOM
+modes hash repo-local files and write manifests under `.async/attest`; verify
+mode re-reads those manifests, checks current digests, can scan npm tarballs for
+unsafe entries, and can require a parsed npm provenance result. The action does
+not publish packages. Real GitHub artifact attestation requires the generated
+workflow to grant OIDC permissions and pass that mode explicitly.
 
 ## Local Checks
 

@@ -1,0 +1,71 @@
+name: async attest
+description: Build and verify release subject, SBOM, provenance, and attestation evidence from explicit generated subjects.
+inputs:
+  mode:
+    description: Operation, one of digest, sbom, attest, or verify.
+    default: digest
+  package-path:
+    description: Repo-relative package path used for package metadata and default subjects.
+    default: "."
+  artifacts:
+    description: Newline or comma separated repo-local subject files or globs.
+    default: ""
+  subject-manifest:
+    description: Repo-relative subject manifest path.
+    default: .async/attest/subjects.json
+  sbom-path:
+    description: Repo-relative SBOM output path.
+    default: .async/attest/sbom.json
+  evidence-path:
+    description: Repo-relative attestation receipt output path.
+    default: .async/actions/receipts/attest.json
+  require-npm-provenance:
+    description: Whether verify mode requires a passed npm provenance result.
+    default: "false"
+  tarball-scan:
+    description: Whether npm tarball subjects must pass safe-entry scanning.
+    default: "false"
+  verification-results:
+    description: Optional repo-relative JSON verification results for verify mode.
+    default: ""
+  github-attestation:
+    description: Whether attest mode should require GitHub attestation permissions.
+    default: "false"
+  working-directory:
+    description: Checked-out repository directory.
+    default: "."
+outputs:
+  subject-manifest:
+    description: Repo-relative subject manifest path.
+    value: ${{ steps.attest.outputs.subject-manifest }}
+  sbom-path:
+    description: Repo-relative SBOM path.
+    value: ${{ steps.attest.outputs.sbom-path }}
+  attestation-url:
+    description: GitHub attestation URL when a real attestation was created.
+    value: ${{ steps.attest.outputs.attestation-url }}
+  verified:
+    description: Whether verify mode passed.
+    value: ${{ steps.attest.outputs.verified }}
+  evidence-path:
+    description: Repo-relative attestation receipt path.
+    value: ${{ steps.attest.outputs.evidence-path }}
+runs:
+  using: composite
+  steps:
+    - name: Build attestation evidence
+      id: attest
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/attest.mjs"
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_PACKAGE_PATH: ${{ inputs.package-path }}
+        INPUT_ARTIFACTS: ${{ inputs.artifacts }}
+        INPUT_SUBJECT_MANIFEST: ${{ inputs.subject-manifest }}
+        INPUT_SBOM_PATH: ${{ inputs.sbom-path }}
+        INPUT_EVIDENCE_PATH: ${{ inputs.evidence-path }}
+        INPUT_REQUIRE_NPM_PROVENANCE: ${{ inputs.require-npm-provenance }}
+        INPUT_TARBALL_SCAN: ${{ inputs.tarball-scan }}
+        INPUT_VERIFICATION_RESULTS: ${{ inputs.verification-results }}
+        INPUT_GITHUB_ATTESTATION: ${{ inputs.github-attestation }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
