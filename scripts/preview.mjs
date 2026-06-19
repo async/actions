@@ -1,5 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { boolInput, configureNpmAuth, cwdFromInput, input, isMissingVersion, npmView, output, packageContext, run, summary } from "./lib.mjs";
 
@@ -64,11 +63,12 @@ try {
     process.exit(0);
   }
 
-  stagingDir = mkdtempSync(join(tmpdir(), "async-actions-preview-"));
+  const stagingPath = ".async/release/preview-stage";
+  stagingDir = join(cwd, stagingPath);
   const stage = runReleasePreview("stage", [
     ...releaseArgs,
     "--registry", registry,
-    "--stage-dir", stagingDir
+    "--stage-dir", stagingPath
   ]);
 
   const spec = packageSpec;

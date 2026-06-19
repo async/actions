@@ -20,6 +20,7 @@ test("preview action publishes same-repo PR using @async/release plan and stage 
 
     const npmCalls = readCalls(context.callsPath);
     assert.deepEqual(npmCalls.map((call) => call.kind), ["release-plan", "release-stage", "view", "publish", "dist-tag"]);
+    assert.equal(npmCalls[1].stageDir, ".async/release/preview-stage");
     assert.equal(npmCalls[1].stageManifest.name, "@async/example");
     assert.equal(npmCalls[1].stageManifest.version, "0.0.0-pr.12.sha.abc123");
     assert.equal(npmCalls[1].stageManifest.publishConfig.registry, "https://npm.pkg.github.com");
@@ -256,7 +257,7 @@ if (args[0] === "exec") {
     writeFileSync(join(data.stageDir, "package.json"), JSON.stringify(stageManifest, null, 2) + "\\n");
     mkdirSync(join(data.stageDir, "dist"), { recursive: true });
     cpSync(join(resolve(process.cwd(), flag("--package", ".")), "dist", "index.js"), join(data.stageDir, "dist", "index.js"));
-    record({ kind: "release-stage", stageManifest });
+    record({ kind: "release-stage", stageDir: data.stageDir, stageManifest });
     process.stdout.write(JSON.stringify({ schemaVersion: 1, package: data.plan.package, preview: data.plan.preview, staging: { path: data.stageDir } }));
     process.exit(0);
   }
