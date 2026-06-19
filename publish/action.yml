@@ -25,6 +25,15 @@ inputs:
   owner-scope:
     description: Owner scope for GitHub Packages mirror names.
     default: ""
+  notes-file:
+    description: Markdown file to use as GitHub Release notes.
+    default: ""
+  title:
+    description: GitHub Release title override.
+    default: ""
+  repository:
+    description: GitHub repository for release creation.
+    default: ""
   verify-public:
     description: Whether to verify unauthenticated npm registry state.
     default: "true"
@@ -66,6 +75,9 @@ runs:
         INPUT_ACCESS: ${{ inputs.access }}
         INPUT_PROVENANCE: ${{ inputs.provenance }}
         INPUT_OWNER_SCOPE: ${{ inputs.owner-scope }}
+        INPUT_NOTES_FILE: ${{ inputs.notes-file }}
+        INPUT_TITLE: ${{ inputs.title }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
         INPUT_VERIFY_PUBLIC: ${{ inputs.verify-public }}
         INPUT_VERIFY_ATTEMPTS: ${{ inputs.verify-attempts }}
         INPUT_VERIFY_DELAY_MS: ${{ inputs.verify-delay-ms }}

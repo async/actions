@@ -14,6 +14,7 @@ step-level actions that generated workflows call.
 | `async/actions/run` | Check generated workflow drift, run an `async-pipeline` job/task, and upload run evidence. |
 | `async/actions/pages` | Validate static/prerender output, build Jekyll when requested, upload Pages artifacts, and optionally deploy. |
 | `async/actions/publish` | Publish npm/GitHub Packages, create or sync GitHub Releases, and verify release state via `npm` and `gh`. |
+| `async/actions/doctor` | Run `async-release` package planning, inspection, release-note rendering, and doctor evidence commands. |
 | `async/actions/preview` | Publish same-repo PR/main preview packages to GitHub Packages and maintain preview comments. |
 | `async/actions/dependabot-merge` | Validate Dependabot metadata, approve, wait for checks, and squash-merge. |
 | `async/actions/matrix` | Produce matrix JSON for downstream `fromJSON(...)` jobs. |
@@ -109,6 +110,14 @@ mode re-reads those manifests, checks current digests, can scan npm tarballs for
 unsafe entries, and can require a parsed npm provenance result. The action does
 not publish packages. Real GitHub artifact attestation requires the generated
 workflow to grant OIDC permissions and pass that mode explicitly.
+
+## Release Doctor
+
+`async/actions/doctor` is a thin wrapper around `async-release`. Generated
+workflows choose the command mode and package path explicitly, then the action
+records bounded evidence such as the release plan, package report, rendered
+release notes, and doctor checks. The action does not infer workflow
+permissions, release package selection, or registry credentials.
 
 ## Local Checks
 

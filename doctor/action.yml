@@ -1,0 +1,66 @@
+name: async release doctor
+description: Run async-release planning, inspection, notes, and doctor evidence commands.
+inputs:
+  mode:
+    description: Command mode, one of plan, inspect, changelog, notes, or doctor.
+    default: doctor
+  package-path:
+    description: Package directory containing package.json.
+    default: "."
+  package-profile:
+    description: Expected package profile for inspection.
+    default: ""
+  release-type:
+    description: Release type override for package planning.
+    default: auto
+  evidence-dir:
+    description: Directory for release evidence.
+    default: .async/release
+  network:
+    description: Doctor network mode, live or mock.
+    default: live
+  repository:
+    description: GitHub repository for release doctor checks.
+    default: ""
+  release-command:
+    description: Command used to invoke async-release.
+    default: async-release
+  working-directory:
+    description: Working directory for release commands.
+    default: "."
+outputs:
+  release-type:
+    description: Planned release type.
+    value: ${{ steps.doctor.outputs.release-type }}
+  package-profile:
+    description: Detected package profile.
+    value: ${{ steps.doctor.outputs.package-profile }}
+  package-name:
+    description: Package name.
+    value: ${{ steps.doctor.outputs.package-name }}
+  package-version:
+    description: Package version.
+    value: ${{ steps.doctor.outputs.package-version }}
+  evidence-dir:
+    description: Evidence directory.
+    value: ${{ steps.doctor.outputs.evidence-dir }}
+  release-notes-path:
+    description: Rendered release notes path.
+    value: ${{ steps.doctor.outputs.release-notes-path }}
+runs:
+  using: composite
+  steps:
+    - name: Run async-release evidence command
+      id: doctor
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/doctor.mjs"
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_PACKAGE_PATH: ${{ inputs.package-path }}
+        INPUT_PACKAGE_PROFILE: ${{ inputs.package-profile }}
+        INPUT_RELEASE_TYPE: ${{ inputs.release-type }}
+        INPUT_EVIDENCE_DIR: ${{ inputs.evidence-dir }}
+        INPUT_NETWORK: ${{ inputs.network }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_RELEASE_COMMAND: ${{ inputs.release-command }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
