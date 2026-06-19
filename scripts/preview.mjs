@@ -73,7 +73,6 @@ try {
   if (mode === "pr" && shouldComment && prNumber) {
     const target = mirrorName === manifest.name ? `${mirrorName}@${distTag}` : `${manifest.name}@npm:${mirrorName}@${distTag}`;
     const body = [
-      "<!-- async-actions-package-preview -->",
       "### Preview package",
       "",
       `Preview for PR head \`${headSha}\`, published as \`${mirrorName}\`.`,
@@ -82,15 +81,8 @@ try {
       `pnpm add ${target}`,
       "```"
     ].join("\n");
-    const comments = run("gh", ["api", `/repos/${repository}/issues/${prNumber}/comments`, "--paginate"], { cwd, capture: true, check: false });
-    const existing = comments.status === 0
-      ? JSON.parse(comments.stdout || "[]").find((comment) => comment?.body?.includes("<!-- async-actions-package-preview -->") && comment?.user?.login === "github-actions[bot]")
-      : undefined;
-    if (existing?.id) {
-      run("gh", ["api", `/repos/${repository}/issues/comments/${existing.id}`, "--method", "PATCH", "-f", `body=${body}`], { cwd });
-    } else {
-      run("gh", ["api", `/repos/${repository}/issues/${prNumber}/comments`, "--method", "POST", "-f", `body=${body}`], { cwd });
-    }
+    output("comment-body", body);
+    output("comment-marker", "async-actions-package-preview");
   }
 
   output("package-spec", `${mirrorName}@${version}`);

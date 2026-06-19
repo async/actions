@@ -1,5 +1,5 @@
 name: async package preview
-description: Publish same-repo PR/main preview packages to GitHub Packages and maintain install comments.
+description: Publish same-repo PR/main preview packages to GitHub Packages and emit install comment bodies.
 inputs:
   package-path:
     description: Package directory containing package.json.
@@ -32,6 +32,12 @@ outputs:
   dist-tag:
     description: Preview dist-tag.
     value: ${{ steps.preview.outputs.dist-tag }}
+  comment-body:
+    description: Markdown body for a generated comment action.
+    value: ${{ steps.preview.outputs.comment-body }}
+  comment-marker:
+    description: Stable marker for the generated preview comment.
+    value: ${{ steps.preview.outputs.comment-marker }}
 runs:
   using: composite
   steps:

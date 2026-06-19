@@ -1,0 +1,61 @@
+name: async comment
+description: Create or update idempotent comments, append summaries, and emit annotations.
+inputs:
+  mode:
+    description: Comment mode, one of pr-comment, issue-comment, summary, or annotation.
+    default: pr-comment
+  repository:
+    description: Repository in owner/name form.
+    default: ""
+  number:
+    description: Pull request or issue number.
+    default: ""
+  marker:
+    description: Stable marker id for idempotent comments.
+    default: ""
+  body:
+    description: Markdown body.
+    default: ""
+  body-file:
+    description: Repo-local markdown body file.
+    default: ""
+  annotations-file:
+    description: Repo-local structured annotations JSON file.
+    default: ""
+  token:
+    description: GitHub token supplied explicitly by the caller.
+    default: ""
+  max-body-bytes:
+    description: Maximum markdown body size before truncation.
+    default: "60000"
+  working-directory:
+    description: Working directory for body and annotation files.
+    default: "."
+outputs:
+  comment-id:
+    description: Comment id for comment modes.
+    value: ${{ steps.comment.outputs.comment-id }}
+  comment-url:
+    description: Comment URL for comment modes.
+    value: ${{ steps.comment.outputs.comment-url }}
+  updated:
+    description: true when an existing comment was updated.
+    value: ${{ steps.comment.outputs.updated }}
+runs:
+  using: composite
+  steps:
+    - name: Write comment, summary, or annotation
+      id: comment
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/comment.mjs"
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_NUMBER: ${{ inputs.number }}
+        INPUT_MARKER: ${{ inputs.marker }}
+        INPUT_BODY: ${{ inputs.body }}
+        INPUT_BODY_FILE: ${{ inputs.body-file }}
+        INPUT_ANNOTATIONS_FILE: ${{ inputs.annotations-file }}
+        INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_MAX_BODY_BYTES: ${{ inputs.max-body-bytes }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
