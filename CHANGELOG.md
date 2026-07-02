@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.22 - 2026-07-02
+
+### Fixes
+
+- Ensure token-backed npm publishes set scoped packages to public access, including
+  retries after an existing-version conflict.
+
 ## 0.1.21 - 2026-07-01
 
 ### Features

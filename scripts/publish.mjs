@@ -40,15 +40,48 @@ async function ensureVersionExists(targetSpec, targetRegistry) {
   throw new Error(`Could not verify ${targetSpec} on ${targetRegistry}: ${((lastView?.stderr ?? lastView?.stdout) ?? "").slice(0, 500)}`);
 }
 
+function npmOutput(result) {
+  return `${result.stdout ?? ""}${result.stderr ?? ""}`;
+}
+
+function isPreviouslyPublished(result) {
+  return /previously published versions/i.test(npmOutput(result));
+}
+
+function ensureNpmPublicAccess() {
+  if (access !== "public") return;
+  if (!npmAuth) {
+    console.log(`Skipping npm access public check for ${manifest.name}; no npm token is configured.`);
+    return;
+  }
+  run("npm", ["access", "set", "status=public", manifest.name, "--registry", registry], { cwd });
+}
+
+function publishToNpm(args) {
+  const result = run("npm", args, { cwd, capture: true, check: false });
+  process.stdout.write(result.stdout ?? "");
+  process.stderr.write(result.stderr ?? "");
+  return result;
+}
+
 if (mode === "npm") {
   const view = npmView(spec, registry, cwd);
   if (view.status === 0 && view.stdout.trim() === version) {
+    ensureNpmPublicAccess();
     console.log(`${spec} already exists on npm; skipping publish.`);
   } else {
     if (!isMissingVersion(view)) throw new Error(`Could not determine whether ${spec} exists on npm.`);
     const args = ["publish", packageDir, "--access", access, "--registry", registry];
     if (provenance) args.push("--provenance");
-    run("npm", args, { cwd });
+    const publish = publishToNpm(args);
+    if (publish.status === 0) {
+      ensureNpmPublicAccess();
+    } else if (isPreviouslyPublished(publish)) {
+      ensureNpmPublicAccess();
+      console.log(`${spec} already exists on npm; repaired public access.`);
+    } else {
+      throw new Error(`npm publish ${packageDir} failed with exit code ${publish.status ?? "unknown"}.`);
+    }
   }
   if (verifyPublic) await ensureVersionExists(spec, "https://registry.npmjs.org");
 } else if (mode === "github-packages") {
