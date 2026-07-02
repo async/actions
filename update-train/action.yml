@@ -1,0 +1,49 @@
+name: async update train
+description: Dispatch package update events to explicit downstream repositories.
+inputs:
+  package-path:
+    description: Package directory used to infer the package name and version.
+    default: "."
+  package-name:
+    description: Package name to announce. Defaults to package-path package.json.
+    default: ""
+  version:
+    description: Version to announce. Defaults to package-path package.json version.
+    default: ""
+  repositories:
+    description: Newline or comma list of owner/repo targets.
+    required: true
+  event-type:
+    description: repository_dispatch event type.
+    default: async-dep-bump
+  github-token:
+    description: GitHub token allowed to dispatch to target repositories.
+    required: true
+  source-repository:
+    description: Source repository announcing the update.
+    default: ""
+outputs:
+  package-name:
+    description: Announced package name.
+    value: ${{ steps.update-train.outputs.package-name }}
+  version:
+    description: Announced package version.
+    value: ${{ steps.update-train.outputs.version }}
+  dispatched:
+    description: Number of repositories dispatched.
+    value: ${{ steps.update-train.outputs.dispatched }}
+runs:
+  using: composite
+  steps:
+    - name: Dispatch update train
+      id: update-train
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/update-train.mjs"
+      env:
+        INPUT_PACKAGE_PATH: ${{ inputs.package-path }}
+        INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_REPOSITORIES: ${{ inputs.repositories }}
+        INPUT_EVENT_TYPE: ${{ inputs.event-type }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_SOURCE_REPOSITORY: ${{ inputs.source-repository }}

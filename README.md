@@ -20,6 +20,8 @@ step-level actions that generated workflows call.
 | `async/actions/contract` | Run API, claims, and schema contract checks and write bounded evidence reports. |
 | `async/actions/hygiene` | Run Async hygiene checks and write manifest, findings, and summary evidence. |
 | `async/actions/dependabot-merge` | Validate Dependabot metadata, approve, wait for checks, and squash-merge. |
+| `async/actions/update-train` | Dispatch validated package update events to explicit downstream repositories. |
+| `async/actions/dependency-bump` | Apply an allowed direct dependency bump, update the lockfile, verify, and push or open a PR. |
 | `async/actions/matrix` | Produce matrix JSON for downstream `fromJSON(...)` jobs. |
 | `async/actions/storage` | Read/write repo-local state, apply safe change sets, and emit receipts for Actions-only users who cannot install the GitHub App. |
 | `async/actions/evidence` | Collect, upload, and merge manifest-backed run evidence artifacts without copying raw file contents into the manifest. |
@@ -160,6 +162,19 @@ identity, staging, install-comment, and evidence data, then keeps npm auth,
 publish, dist-tag, outputs, and summaries inside the action. Generated
 workflows remain responsible for event triggers, permissions, token mapping, and
 stale-head decisions such as setting `move-dist-tag: "false"`.
+
+## Update Trains And Dependency Bumps
+
+`async/actions/update-train` dispatches repository update events from generated
+release workflows. Callers pass the target repositories and token explicitly;
+the action validates package names, versions, repositories, and event names
+before calling `gh api repos/<owner>/<repo>/dispatches`.
+
+`async/actions/dependency-bump` applies a direct dependency version update in a
+checked-out repository, runs the package manager's lockfile update, executes
+explicit verification commands, then pushes or opens a pull request according to
+caller-provided policy. The action only stages package, lockfile, and generated
+Pipeline sync files.
 
 ## Comments And Annotations
 

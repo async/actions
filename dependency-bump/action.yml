@@ -1,0 +1,90 @@
+name: async dependency bump
+description: Apply a validated package version bump and publish the result by push or pull request.
+inputs:
+  package-name:
+    description: Package name to bump. Defaults to repository_dispatch client_payload.package.
+    default: ""
+  version:
+    description: Target package version. Defaults to repository_dispatch client_payload.version.
+    default: ""
+  allowed-packages:
+    description: Newline or comma list of packages allowed to be bumped.
+    default: ""
+  package-manager:
+    description: Package manager command to update the lockfile. Defaults to package.json packageManager.
+    default: ""
+  verify:
+    description: Newline-separated commands to run after the lockfile update.
+    default: ""
+  success-mode:
+    description: Behavior after verification succeeds: pull-request, push, or none.
+    default: pull-request
+  failure-mode:
+    description: Behavior after verification fails: pull-request or none.
+    default: pull-request
+  branch-prefix:
+    description: Branch prefix for pull-request fallback.
+    default: async/dependency-bump/
+  base-branch:
+    description: Base branch for pushes and pull requests.
+    default: main
+  commit-message:
+    description: Commit message. Defaults to a generated bump message.
+    default: ""
+  pr-title:
+    description: Pull request title. Defaults to the commit message.
+    default: ""
+  pr-body:
+    description: Pull request body.
+    default: ""
+  repository:
+    description: Repository in owner/name form.
+    default: ""
+  github-token:
+    description: GitHub token used for push and pull request operations.
+    required: true
+  working-directory:
+    description: Working directory for the checked-out repository.
+    default: "."
+outputs:
+  changed:
+    description: Whether package files changed.
+    value: ${{ steps.dependency-bump.outputs.changed }}
+  package-name:
+    description: Bumped package name.
+    value: ${{ steps.dependency-bump.outputs.package-name }}
+  version:
+    description: Target package version.
+    value: ${{ steps.dependency-bump.outputs.version }}
+  commit-sha:
+    description: Created commit SHA, when a commit was created.
+    value: ${{ steps.dependency-bump.outputs.commit-sha }}
+  pull-request-url:
+    description: Pull request URL, when one was opened or reused.
+    value: ${{ steps.dependency-bump.outputs.pull-request-url }}
+  verify-status:
+    description: passed, failed, or skipped.
+    value: ${{ steps.dependency-bump.outputs.verify-status }}
+runs:
+  using: composite
+  steps:
+    - name: Apply dependency bump
+      id: dependency-bump
+      shell: bash
+      run: node "${{ github.action_path }}/../scripts/dependency-bump.mjs"
+      env:
+        INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_ALLOWED_PACKAGES: ${{ inputs.allowed-packages }}
+        INPUT_PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        INPUT_VERIFY: ${{ inputs.verify }}
+        INPUT_SUCCESS_MODE: ${{ inputs.success-mode }}
+        INPUT_FAILURE_MODE: ${{ inputs.failure-mode }}
+        INPUT_BRANCH_PREFIX: ${{ inputs.branch-prefix }}
+        INPUT_BASE_BRANCH: ${{ inputs.base-branch }}
+        INPUT_COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        INPUT_PR_TITLE: ${{ inputs.pr-title }}
+        INPUT_PR_BODY: ${{ inputs.pr-body }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
